@@ -1,0 +1,58 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: pbd_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=bigdata_sentiment_mk
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - pbd_network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: pbd_mongo_express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH=false
+    depends_on:
+      - mongodb
+    networks:
+      - pbd_network
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pbd_dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - DB_NAME=bigdata_sentiment_mk
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mongodb
+    networks:
+      - pbd_network
+
+volumes:
+  mongo_data:
+    name: pbd_mongo_data
+    driver: local
+
+networks:
+  pbd_network:
+    name: pbd_network
+    driver: bridge
